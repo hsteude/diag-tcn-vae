@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "diag-vae"
+version = "0.1.0"
+description = ""
+authors = ["hsteude <henrik.steude@gmail.com>"]
+readme = "README.md"
+packages = [{include = "diag_vae"}]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.12"
+pandas = "^1.5.3"
+scikit-learn = "^1.2.2"
+ipython = "^8.11.0"
+ipykernel = "^6.22.0"
+ipdb = "^0.13.13"
+pdbpp = "^0.10.3"
+pytorch-lightning = "^2.0.0"
+scipy = "^1.10.1"
+matplotlib = "^3.7.1"
+tensorboardx = "^2.6"
+tensorboard = "^2.12.0"
+nbstripout = "^0.6.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pyright]
+venvPath = "/home/henrik/.cache/pypoetry/virtualenvs/"
+venv = "diag-vae--vQ9hJnP-py3.9"
