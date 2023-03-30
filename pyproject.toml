@@ -20,6 +20,8 @@ matplotlib = "^3.7.1"
 tensorboardx = "^2.6"
 tensorboard = "^2.12.0"
 nbstripout = "^0.6.1"
+jupyter = "^1.0.0"
+jupyterlab = "^3.6.2"
 
 
 [build-system]
