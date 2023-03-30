@@ -10,7 +10,8 @@ class Conv1dAE(pl.LightningModule):
         self,
         in_dim=1,
         latent_dim: int = 10,
-        seq_len: int = 500,
+        seq_len_x: int = 500,
+        seq_len_y: int = 100,
         lr: float = 1e-3,
         *args,
         **kwargs,
@@ -36,7 +37,7 @@ class Conv1dAE(pl.LightningModule):
             tcn2_out_dims=ENC_TCN2_OUT_DIMS,
             kernel_size=KERNEL_SIZE,
             latent_dim=latent_dim,
-            seq_len=seq_len,
+            seq_len=seq_len_x,
         )
         self.x_decoder, self.y_decoder = [Decoder(
             tcn1_in_dims=DEC_TCN1_IN_DIMS,
@@ -46,7 +47,7 @@ class Conv1dAE(pl.LightningModule):
             kernel_size=KERNEL_SIZE,
             latent_dim=latent_dim,
             seq_len=seq_len,
-        ) for _ in range(2)]
+        ) for seq_len in (seq_len_x, seq_len_y)]
         
 
     def encode(self, x):
@@ -60,7 +61,7 @@ class Conv1dAE(pl.LightningModule):
 
     @staticmethod
     def loss_function(x, x_hat, y, y_hat):
-        return nn.MSELoss()(x, x_hat) + 0*nn.MSELoss()(y, y_hat)
+        return nn.MSELoss()(x, x_hat) + nn.MSELoss()(y, y_hat)
 
     def shared_eval(self, x, y):
         z = self.encode(x)
