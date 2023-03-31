@@ -11,7 +11,7 @@ class Conv1dAE(pl.LightningModule):
         in_dim=1,
         latent_dim: int = 10,
         seq_len_x: int = 500,
-        seq_len_y: int = 100,
+        # seq_len_y: int = 100,
         lr: float = 1e-3,
         *args,
         **kwargs,
@@ -39,38 +39,38 @@ class Conv1dAE(pl.LightningModule):
             latent_dim=latent_dim,
             seq_len=seq_len_x,
         )
-        self.x_decoder, self.y_decoder = [Decoder(
+        self.x_decoder= [Decoder(
             tcn1_in_dims=DEC_TCN1_IN_DIMS,
             tcn1_out_dims=DEC_TCN1_OUT_DIMS,
             tcn2_in_dims=DEC_TCN2_IN_DIMS,
             tcn2_out_dims=DEC_TCN2_OUT_DIMS,
             kernel_size=KERNEL_SIZE,
             latent_dim=latent_dim,
-            seq_len=seq_len,
-        ) for seq_len in (seq_len_x, seq_len_y)]
+            seq_len=seq_len_x,
+        ) 
         
 
     def encode(self, x):
         return self.encoder(x)
 
     def decode(self, z):
-        return self.x_decoder(z), self.y_decoder(z)
+        return self.x_decoder(z)
 
     def forward(self, x):
         return self.encode(x)
 
     @staticmethod
-    def loss_function(x, x_hat, y, y_hat):
-        return nn.MSELoss()(x, x_hat) + nn.MSELoss()(y, y_hat)
+    def loss_function(x, x_hat):
+        return nn.MSELoss()(x, x_hat)
 
     def shared_eval(self, x, y):
         z = self.encode(x)
-        x_hat, y_hat = self.decode(z)
-        loss = self.loss_function(x, x_hat, y, y_hat)
+        x_hat = self.decode(z)
+        loss = self.loss_function(x, x_hat)
         return z, x_hat, y_hat, loss
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
+        x, _ = batch
         _, _, _, loss = self.shared_eval(x, y)
         self.log("train_loss", loss)
         return loss
