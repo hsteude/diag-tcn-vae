@@ -29,5 +29,5 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pyright]
-venvPath = "/home/henrik/.cache/pypoetry/virtualenvs/"
-venv = "diag-vae--vQ9hJnP-py3.9"
+venvPath = ""
+venv = ".venv"

@@ -117,7 +117,7 @@ class Decoder(nn.Module):
             kernel_size=kernel_size,
         )
 
-        # tcn1
+        # tcn2
         self.upsampler2 = torch.nn.Upsample(size=size_tcn2_in, mode="nearest")
         self.tcn2 = TCN(
             in_dims=tcn2_in_dims,
