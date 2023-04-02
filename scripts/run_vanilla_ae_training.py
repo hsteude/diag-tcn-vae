@@ -10,6 +10,7 @@ if __name__ == "__main__":
     COLS = [f"sig_{i+1}" for i in range(6)]
     COLS_COMP_A = COLS[0:3] 
     COLS_COMP_B = COLS[3:6] 
+    LATEND_DIM = 10
     dm = DiagTsDataModule(
         data_path="data/trainin_data.csv",
         seq_len=SEQ_LEN,
@@ -17,10 +18,10 @@ if __name__ == "__main__":
     )
     model = VanillaTcnAE(
         in_dim=len(COLS),
-        latent_dim=200,
+        latent_dim=LATEND_DIM,
         seq_len=SEQ_LEN,
     )
-    logger = TensorBoardLogger("logs", name="tcn_ae", default_hp_metric=True)
+    logger = TensorBoardLogger("logs", name="vanilla_tcn_ae", default_hp_metric=True)
     accelerator = "gpu" if torch.cuda.is_available() else "cpu"
     devices = 1 
     trainer = pl.Trainer(

@@ -29,5 +29,5 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pyright]
-venvPath = ""
+venvPath = "."
 venv = ".venv"

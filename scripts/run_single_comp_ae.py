@@ -1,4 +1,4 @@
-from diag_vae.diag_tcn_ae import DiagTcnAE
+from diag_vae.vanilla_tcn_ae import VanillaTcnAE
 from pytorch_lightning.loggers import TensorBoardLogger
 import pytorch_lightning as pl
 import torch
@@ -10,21 +10,21 @@ if __name__ == "__main__":
     COLS = [f"sig_{i+1}" for i in range(6)]
     COLS_COMP_A = COLS[0:3] 
     COLS_COMP_B = COLS[3:6] 
-    LATEND_DIM = 10
+    LATEND_DIM = 5
+    breakpoint()
     dm = DiagTsDataModule(
         data_path="data/trainin_data.csv",
         seq_len=SEQ_LEN,
-        cols=COLS,
+        cols=COLS_COMP_A,
+        comp_a_cols=COLS_COMP_A,
+        comp_b_cols=COLS_COMP_A
     )
-    model = DiagTcnAE(
-        in_dim=len(COLS),
+    model = VanillaTcnAE(
+        in_dim=len(COLS_COMP_A),
         latent_dim=LATEND_DIM,
         seq_len=SEQ_LEN,
-        number_of_components=2,
-        component_output_dims=[3, 3]
-
     )
-    logger = TensorBoardLogger("logs", name="diag_tcn_ae", default_hp_metric=True)
+    logger = TensorBoardLogger("logs", name="vanilla_tcn_ae", default_hp_metric=True)
     accelerator = "gpu" if torch.cuda.is_available() else "cpu"
     devices = 1 
     trainer = pl.Trainer(
