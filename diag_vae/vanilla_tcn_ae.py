@@ -69,7 +69,7 @@ class VanillaTcnAE(pl.LightningModule):
         return z, x_hat, loss
 
     def training_step(self, batch, batch_idx):
-        x, _, _ = batch
+        x, _  = batch
         _, _, loss = self.shared_eval(x)
         self.log("train_loss", loss)
         return loss

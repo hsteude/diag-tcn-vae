@@ -160,7 +160,11 @@ cython_debug/
 #.idea/
 #
 
-data/*
+data/raw/*
+data/processed/*
 logs/*
 
-!data/.gitkeep
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+.DS_Store
