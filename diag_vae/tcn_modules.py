@@ -62,7 +62,7 @@ class TemporalConvLayer(nn.Module):
 
 
 class TCN(nn.Module):
-    def __init__(self, in_dims: list[int], out_dims: list[int], kernel_size: int):
+    def __init__(self, in_dims: list, out_dims: list, kernel_size: int):
         super(TCN, self).__init__()
         layers = []
         for i in range(len(in_dims)):
@@ -139,10 +139,10 @@ class Decoder(nn.Module):
 class Encoder(nn.Module):
     def __init__(
         self,
-        tcn1_in_dims: list[int],
-        tcn1_out_dims: list[int],
-        tcn2_in_dims: list[int],
-        tcn2_out_dims: list[int],
+        tcn1_in_dims: list,
+        tcn1_out_dims: list,
+        tcn2_in_dims: list,
+        tcn2_out_dims: list,
         kernel_size: int = 15,
         latent_dim: int = 10,
         seq_len: int = 1000,

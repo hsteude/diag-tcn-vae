@@ -8,8 +8,12 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 class VanillaTcnAE(pl.LightningModule):
     def __init__(
         self,
-        in_dim=1,
+        enc_tcn1_in_dims: list = [51, 50, 40, 30, 20],
+        enc_tcn1_out_dims: list = [50, 40, 30, 20, 10],
+        enc_tcn2_in_dims: list = [10, 6, 5, 4, 3],
+        enc_tcn2_out_dims: list = [6, 5, 4, 3, 1],
         latent_dim: int = 10,
+        kernel_size: int = 15,
         seq_len: int = 500,
         lr: float = 1e-3,
         *args,
@@ -20,30 +24,27 @@ class VanillaTcnAE(pl.LightningModule):
         self.save_hyperparameters()
         self.lr = lr
 
-        ENC_TCN1_IN_DIMS = [in_dim, 50, 40, 30, 20]
-        ENC_TCN1_OUT_DIMS = [50, 40, 30, 20, 10]
-        ENC_TCN2_IN_DIMS = [10, 6, 5, 4, 3]
-        ENC_TCN2_OUT_DIMS = [6, 5, 4, 3, 1]
-        DEC_TCN1_IN_DIMS = ENC_TCN2_OUT_DIMS[::-1]
-        DEC_TCN1_OUT_DIMS = ENC_TCN2_IN_DIMS[::-1]
-        DEC_TCN2_IN_DIMS = ENC_TCN1_OUT_DIMS[::-1]
-        DEC_TCN2_OUT_DIMS = ENC_TCN1_IN_DIMS[::-1]
-        KERNEL_SIZE = 15
+
+        dec_tcn1_in_dims = enc_tcn2_out_dims[::-1]
+        dec_tcn1_out_dims = enc_tcn2_in_dims[::-1]
+        dec_tcn2_in_dims = enc_tcn1_out_dims[::-1]
+        dec_tcn2_out_dims = enc_tcn1_in_dims[::-1]
+
         self.encoder = Encoder(
-            tcn1_in_dims=ENC_TCN1_IN_DIMS,
-            tcn1_out_dims=ENC_TCN1_OUT_DIMS,
-            tcn2_in_dims=ENC_TCN2_IN_DIMS,
-            tcn2_out_dims=ENC_TCN2_OUT_DIMS,
-            kernel_size=KERNEL_SIZE,
+            tcn1_in_dims=enc_tcn1_in_dims,
+            tcn1_out_dims=enc_tcn1_out_dims,
+            tcn2_in_dims=enc_tcn2_in_dims,
+            tcn2_out_dims=enc_tcn2_out_dims,
+            kernel_size=kernel_size,
             latent_dim=latent_dim,
             seq_len=seq_len,
         )
         self.decoder= Decoder(
-            tcn1_in_dims=DEC_TCN1_IN_DIMS,
-            tcn1_out_dims=DEC_TCN1_OUT_DIMS,
-            tcn2_in_dims=DEC_TCN2_IN_DIMS,
-            tcn2_out_dims=DEC_TCN2_OUT_DIMS,
-            kernel_size=KERNEL_SIZE,
+            tcn1_in_dims=dec_tcn1_in_dims,
+            tcn1_out_dims=dec_tcn1_out_dims,
+            tcn2_in_dims=dec_tcn2_in_dims,
+            tcn2_out_dims=dec_tcn2_out_dims,
+            kernel_size=kernel_size,
             latent_dim=latent_dim,
             seq_len=seq_len,
         ) 
