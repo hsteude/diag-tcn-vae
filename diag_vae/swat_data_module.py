@@ -94,7 +94,6 @@ class SwatDataModule(pl.LightningDataModule):
 
 if __name__ == "__main__":
     import diag_vae.constants as const
-    breakpoint()
 
     ds = SwatDataset(
         data_path=const.SWAT_VAL_PATH,

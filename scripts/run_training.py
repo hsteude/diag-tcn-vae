@@ -3,6 +3,7 @@ import pytorch_lightning as pl
 import torch
 from diag_vae.swat_data_module import SwatDataModule
 import importlib
+import os
 
 
 def run_training(
@@ -13,6 +14,7 @@ def run_training(
     log_dir: str = "logs",
     num_devices: int = 1,
     max_epochs: int = 500,
+    checkpoint_dir: str = "",
 ) -> None:
     dm = SwatDataModule(**data_module_args)
     importlib.import_module(model_module)
@@ -20,23 +22,31 @@ def run_training(
         importlib.import_module(model_module),
         model_class_name,
     )
-    model = ModelClass(**model_args)
+    if checkpoint_dir:
+        checkpoint_path = os.path.join(
+            checkpoint_dir,
+            f"{os.listdir(checkpoint_dir)[0]}",
+        )
+        model = ModelClass(**model_args).load_from_checkpoint(checkpoint_path)
+    else:
+        model = ModelClass(**model_args)
     logger = TensorBoardLogger(log_dir, name=model_class_name, default_hp_metric=True)
     accelerator = "gpu" if torch.cuda.is_available() else "cpu"
     devices = num_devices
+
     trainer = pl.Trainer(
         max_epochs=max_epochs,
         accelerator=accelerator,
         devices=devices,
         logger=logger,
     )
+    torch.set_float32_matmul_precision("medium")
     trainer.fit(model, datamodule=dm)
 
 
 if __name__ == "__main__":
     import diag_vae.constants as const
     import argparse
-    breakpoint()
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -44,11 +54,19 @@ if __name__ == "__main__":
         type=str,
         help="The name of the model, currently we have VanillaTcnAE and DiagTcnAE",
     )
+    parser.add_argument(
+        "--checkpoint_path",
+        type=str,
+        default="",
+        help="Path to where the latest checkpoints are, in case you want"
+        "to continue training",
+    )
     args = parser.parse_args()
 
-    LATEND_DIM = 100
+    LATEND_DIM = 10
     SEQ_LEN = 1000
-    KERNEL_SIZE = 5
+    KERNEL_SIZE = 15
+    BATCH_SIZE = 128
 
     # vanila tcn ae
     if args.model == "VanillaTcnAE":
@@ -69,7 +87,7 @@ if __name__ == "__main__":
             seq_len=SEQ_LEN,
             cols=const.SWAT_SENSOR_COLS,
             symbols_dct=const.SWAT_SYMBOLS_MAP,
-            batch_size=32,
+            batch_size=BATCH_SIZE,
             dl_workers=12,
         )
         run_training(
@@ -80,6 +98,7 @@ if __name__ == "__main__":
             log_dir="logs",
             num_devices=1,
             max_epochs=500,
+            checkpoint_dir=args.checkpoint_path,
         )
 
     # diag tcn
@@ -104,7 +123,7 @@ if __name__ == "__main__":
             seq_len=SEQ_LEN,
             cols=const.SWAT_SENSOR_COLS,
             symbols_dct=const.SWAT_SYMBOLS_MAP,
-            batch_size=32,
+            batch_size=BATCH_SIZE,
             dl_workers=12,
         )
         run_training(
@@ -115,4 +134,5 @@ if __name__ == "__main__":
             log_dir="logs",
             num_devices=1,
             max_epochs=500,
+            checkpoint_dir=args.checkpoint_path,
         )

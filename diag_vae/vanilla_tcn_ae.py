@@ -85,7 +85,7 @@ class VanillaTcnAE(pl.LightningModule):
             optimizer,
             factor=0.5,
             patience=25,
-            min_lr=1e-5,
+            min_lr=1e-6,
         )
         return [optimizer], [
             {"scheduler": scheduler, "interval": "epoch", "monitor": "train_loss"}

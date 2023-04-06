@@ -11,9 +11,9 @@ class DiagTsDataset(Dataset):
         self,
         seq_len: int,
         data_path: str,
-        cols: list[str],
-        comp_a_cols: list[str],
-        comp_b_cols: list[str],
+        cols: list,
+        comp_a_cols: list,
+        comp_b_cols: list,
     ):
         df = pd.read_csv(data_path)
         self.df = df[cols]

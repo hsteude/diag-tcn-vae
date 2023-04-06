@@ -21,7 +21,6 @@ class DiagTcnAE(pl.LightningModule):
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
-        breakpoint()
 
         self.save_hyperparameters()
         self.lr = lr
