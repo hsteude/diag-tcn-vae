@@ -77,7 +77,7 @@ class DiagTcnAE(pl.LightningModule):
         return z, x_hat_ls, loss
 
     def training_step(self, batch, batch_idx):
-        x, x_comp_ls = batch
+        x, x_comp_ls, _ = batch
         _, _, loss = self.shared_eval(x, x_comp_ls)
         self.log("train_loss", loss)
         return loss

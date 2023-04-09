@@ -84,7 +84,7 @@ if __name__ == "__main__":
         dm_args = dict(
             data_path_train=const.SWAT_TRAIN_PATH,
             data_path_val=const.SWAT_TRAIN_PATH,
-            seq_len=SEQ_LEN,
+            seq_len_x=SEQ_LEN,
             cols=const.SWAT_SENSOR_COLS,
             symbols_dct=const.SWAT_SYMBOLS_MAP,
             batch_size=BATCH_SIZE,
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         dm_args = dict(
             data_path_train=const.SWAT_TRAIN_PATH,
             data_path_val=const.SWAT_TRAIN_PATH,
-            seq_len=SEQ_LEN,
+            seq_len_x=SEQ_LEN,
             cols=const.SWAT_SENSOR_COLS,
             symbols_dct=const.SWAT_SYMBOLS_MAP,
             batch_size=BATCH_SIZE,
@@ -129,6 +129,45 @@ if __name__ == "__main__":
         run_training(
             model_module="diag_vae.diag_tcn_ae",
             model_class_name="DiagTcnAE",
+            model_args=model_args,
+            data_module_args=dm_args,
+            log_dir="logs",
+            num_devices=1,
+            max_epochs=500,
+            checkpoint_dir=args.checkpoint_path,
+        )
+
+    # diag tcn predictor
+    if args.model == "DiagTcnAePredictor":
+        SEQ_LEN_Y = 300
+        model_args = dict(
+            enc_tcn1_in_dims=[51, 50, 40, 30, 20],
+            enc_tcn1_out_dims=[50, 40, 30, 20, 10],
+            enc_tcn2_in_dims=[10, 6, 5, 4, 3],
+            enc_tcn2_out_dims=[6, 5, 4, 3, 1],
+            component_output_dims=[
+                len(const.SWAT_SYMBOLS_MAP[k]) for k in const.SWAT_SYMBOLS_MAP.keys()
+            ],
+            latent_dim=LATEND_DIM,
+            kernel_size=KERNEL_SIZE,
+            seq_len_x=SEQ_LEN,
+            seq_len_y=SEQ_LEN_Y,
+            lr=1e-3,
+        )
+
+        dm_args = dict(
+            data_path_train=const.SWAT_TRAIN_PATH,
+            data_path_val=const.SWAT_TRAIN_PATH,
+            seq_len_x=SEQ_LEN,
+            seq_len_y=SEQ_LEN_Y,
+            cols=const.SWAT_SENSOR_COLS,
+            symbols_dct=const.SWAT_SYMBOLS_MAP,
+            batch_size=BATCH_SIZE,
+            dl_workers=12,
+        )
+        run_training(
+            model_module="diag_vae.diag_tcn_ae_predictor",
+            model_class_name="DiagTcnAePredictor",
             model_args=model_args,
             data_module_args=dm_args,
             log_dir="logs",
