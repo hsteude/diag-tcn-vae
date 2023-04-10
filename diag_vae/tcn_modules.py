@@ -36,9 +36,9 @@ class Conv1DResidualBlock(nn.Module):
         out = self.conv1(x)
         out = self.activattion(out)
         out = self.conv2(out)
+        out = self.activattion(out)
         res = self.residual(x)
-        out = self.activattion(x + res)
-        return out
+        return out + res
 
 
 class TemporalConvLayer(nn.Module):
@@ -67,8 +67,18 @@ class TCN(nn.Module):
         layers = []
         for i in range(len(in_dims)):
             dilation = 2**i
+            # layers.append(
+            #     TemporalConvLayer(
+            #         in_dim=in_dims[i],
+            #         kernel_size=kernel_size,
+            #         out_dim=out_dims[i],
+            #         padding="same",
+            #         dilation=dilation,
+            #         stride=1,
+            #     )
+            # )
             layers.append(
-                TemporalConvLayer(
+                Conv1DResidualBlock(
                     in_dim=in_dims[i],
                     kernel_size=kernel_size,
                     out_dim=out_dims[i],

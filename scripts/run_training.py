@@ -71,8 +71,8 @@ if __name__ == "__main__":
     # vanila tcn ae
     if args.model == "VanillaTcnAE":
         model_args = dict(
-            enc_tcn1_in_dims=[51, 100, 60, 40, 20],
-            enc_tcn1_out_dims=[100, 60, 40, 20, 10],
+            enc_tcn1_in_dims=[51, 50, 40, 30, 20],
+            enc_tcn1_out_dims=[50, 40, 30, 20, 10],
             enc_tcn2_in_dims=[10, 6, 5, 4, 3],
             enc_tcn2_out_dims=[6, 5, 4, 3, 1],
             latent_dim=LATEND_DIM,
