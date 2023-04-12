@@ -63,18 +63,23 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    LATEND_DIM = 10
-    SEQ_LEN = 1000
+    LATEND_DIM = 5
+    SEQ_LEN = 500
+    SEQ_LEN_Y = 100
     KERNEL_SIZE = 15
     BATCH_SIZE = 128
 
     # vanila tcn ae
     if args.model == "VanillaTcnAE":
         model_args = dict(
-            enc_tcn1_in_dims=[51, 50, 40, 30, 20],
-            enc_tcn1_out_dims=[50, 40, 30, 20, 10],
-            enc_tcn2_in_dims=[10, 6, 5, 4, 3],
-            enc_tcn2_out_dims=[6, 5, 4, 3, 1],
+            enc_tcn1_in_dims=[51, 50, 20,],# 30, 20],
+            enc_tcn1_out_dims=[50, 20, 10],#, 20, 10],
+            enc_tcn2_in_dims=[10, 6, 3],#, 4, 3],
+            enc_tcn2_out_dims=[6, 3, 1],#, 3, 1],
+            # enc_tcn1_in_dims=[51, 50, 40, 30, 20],
+            # enc_tcn1_out_dims=[50, 40, 30, 20, 10],
+            # enc_tcn2_in_dims=[10, 6, 5, 4, 3],
+            # enc_tcn2_out_dims=[6, 5, 4, 3, 1],
             latent_dim=LATEND_DIM,
             kernel_size=KERNEL_SIZE,
             seq_len=SEQ_LEN,
@@ -139,12 +144,11 @@ if __name__ == "__main__":
 
     # diag tcn predictor
     if args.model == "DiagTcnAePredictor":
-        SEQ_LEN_Y = 300
         model_args = dict(
-            enc_tcn1_in_dims=[51, 50, 40, 30, 20],
-            enc_tcn1_out_dims=[50, 40, 30, 20, 10],
-            enc_tcn2_in_dims=[10, 6, 5, 4, 3],
-            enc_tcn2_out_dims=[6, 5, 4, 3, 1],
+            enc_tcn1_in_dims=[51, 50, 20,],# 30, 20],
+            enc_tcn1_out_dims=[50, 20, 10],#, 20, 10],
+            enc_tcn2_in_dims=[10, 6, 3],#, 4, 3],
+            enc_tcn2_out_dims=[6, 3, 1],#, 3, 1],
             component_output_dims=[
                 len(const.SWAT_SYMBOLS_MAP[k]) for k in const.SWAT_SYMBOLS_MAP.keys()
             ],
