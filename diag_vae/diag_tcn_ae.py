@@ -64,6 +64,16 @@ class DiagTcnAE(pl.LightningModule):
     def forward(self, x):
         return self.encode(x)
 
+    def get_sample_component_recon_error(self, x, x_ls):
+        z = self.encode(x)
+        x_hat_ls = self.decode(z)
+         
+        comp_mse_ls = [
+            torch.mean(torch.mean((y - y_hat) ** 2, dim=2), dim=1).detach().numpy()
+            for y, y_hat in zip(x_ls, x_hat_ls)
+        ]
+        return comp_mse_ls
+
     @staticmethod
     def loss_function(x_ls, x_hat_ls):
         loss_ls = [nn.MSELoss()(x, x_hat) for x, x_hat in zip(x_ls, x_hat_ls)]

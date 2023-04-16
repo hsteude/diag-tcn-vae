@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+import numpy as np
+import diag_vae.constants as const
 
 
 class VanillaTcnAE(pl.LightningModule):
@@ -24,7 +26,6 @@ class VanillaTcnAE(pl.LightningModule):
         self.save_hyperparameters()
         self.lr = lr
 
-
         dec_tcn1_in_dims = enc_tcn2_out_dims[::-1]
         dec_tcn1_out_dims = enc_tcn2_in_dims[::-1]
         dec_tcn2_in_dims = enc_tcn1_out_dims[::-1]
@@ -39,7 +40,7 @@ class VanillaTcnAE(pl.LightningModule):
             latent_dim=latent_dim,
             seq_len=seq_len,
         )
-        self.decoder= Decoder(
+        self.decoder = Decoder(
             tcn1_in_dims=dec_tcn1_in_dims,
             tcn1_out_dims=dec_tcn1_out_dims,
             tcn2_in_dims=dec_tcn2_in_dims,
@@ -47,8 +48,7 @@ class VanillaTcnAE(pl.LightningModule):
             kernel_size=kernel_size,
             latent_dim=latent_dim,
             seq_len=seq_len,
-        ) 
-        
+        )
 
     def encode(self, x):
         return self.encoder(x)
@@ -58,6 +58,21 @@ class VanillaTcnAE(pl.LightningModule):
 
     def forward(self, x):
         return self.encode(x)
+
+    def get_sample_component_recon_error(self, x):
+        z = self.encode(x)
+        x_hat = self.decode(z)
+        mse_per_sig = torch.mean((x - x_hat) ** 2, dim=2).detach().numpy()
+        number_comp_signals = [
+            len(const.SWAT_SYMBOLS_MAP[k]) for k in const.SWAT_SYMBOLS_MAP.keys()
+        ]
+        number_comp_signals_cumsum = list(np.array(number_comp_signals).cumsum())
+        comp_mse_ls = []
+        for start, end in zip(
+            [0] + number_comp_signals_cumsum[:-1], number_comp_signals_cumsum
+        ):
+            comp_mse_ls.append(np.array(mse_per_sig[:, start:end].mean(axis=1)))
+        return comp_mse_ls
 
     @staticmethod
     def loss_function(x, x_hat):
@@ -70,7 +85,7 @@ class VanillaTcnAE(pl.LightningModule):
         return z, x_hat, loss
 
     def training_step(self, batch, batch_idx):
-        x, _, _  = batch
+        x, _, _ = batch
         _, _, loss = self.shared_eval(x)
         self.log("train_loss", loss)
         return loss

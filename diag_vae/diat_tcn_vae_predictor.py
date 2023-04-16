@@ -1,4 +1,4 @@
-from diag_vae.tcn_modules import Encoder, Decoder
+from diag_vae.tcn_modules import VaeEncoder, Decoder
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
@@ -18,6 +18,7 @@ class DiagTcnAePredictor(pl.LightningModule):
         kernel_size: int = 15,
         component_output_dims: list = [3, 3],
         lr: float = 1e-3,
+        beta: float = 0.5,
         *args,
         **kwargs,
     ) -> None:
@@ -25,13 +26,14 @@ class DiagTcnAePredictor(pl.LightningModule):
 
         self.save_hyperparameters()
         self.lr = lr
+        self.latent_dim = latent_dim
 
         dec_tcn1_in_dims = enc_tcn2_out_dims[::-1]
         dec_tcn1_out_dims = enc_tcn2_in_dims[::-1]
         dec_tcn2_in_dims = enc_tcn1_out_dims[::-1]
         dec_tcn2_out_dims = enc_tcn1_in_dims[::-1]
 
-        self.encoder = Encoder(
+        self.encoder = VaeEncoder(
             tcn1_in_dims=enc_tcn1_in_dims,
             tcn1_out_dims=enc_tcn1_out_dims,
             tcn2_in_dims=enc_tcn2_in_dims,
@@ -76,27 +78,39 @@ class DiagTcnAePredictor(pl.LightningModule):
     def forward(self, x):
         return self.encode(x)
 
-    def get_sample_component_recon_error(self, x, y_ls):
-        z = self.encode(x)
-        _, y_hat_ls = self.decode(z)
-         
-        comp_mse_ls = [
-            torch.mean(torch.mean((y - y_hat) ** 2, dim=2), dim=1).detach().numpy()
-            for y, y_hat in zip(y_ls, y_hat_ls)
-        ]
-        return comp_mse_ls
-
     @staticmethod
-    def loss_function(x_hat, x, y_ls, y_hat_ls):
+    def sample_gaussian(mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
+        std = torch.exp(0.5 * logvar)
+        e = torch.randn_like(std)
+        s = e * std + mu
+        return s
+
+    def loss_function(self, pzx, x_hat, x, y_ls, y_hat_ls):
+        # initiating pz here since we ran into
+        # problems when we did it in the init
+        pz = torch.distributions.MultivariateNormal(
+            loc=torch.zeros(self.latent_dim).to(self.device),
+            covariance_matrix=torch.eye(self.latent_dim).to(self.device),
+        )
+
+        kl = torch.distributions.kl.kl_divergence(pzx, pz)
         y_loss_ls = [nn.MSELoss()(y_hat, y) for y, y_hat in zip(y_ls, y_hat_ls)]
         x_loss = nn.MSELoss()(x, x_hat)
-        loss = torch.mean(torch.stack(y_loss_ls)) + x_loss
+        loss = torch.mean(torch.stack(y_loss_ls)) + x_loss + self.beta * kl
         return loss, x_loss, y_loss_ls
 
     def shared_eval(self, x, y_ls):
-        z = self.encode(x)
+        mu_z, log_var_z = self.encode(x)
+        pzx_sigma = torch.cat(
+            [torch.diag(torch.exp(log_var_z[i, :])) for i in range(log_var_z.shape[0])]
+        ).view(-1, self.latent_dim, self.latent_dim)
+        pzx = torch.distributions.MultivariateNormal(
+            loc=mu_z, covariance_matrix=pzx_sigma
+        )
+        z = self.sample_gaussian(mu=mu_z, logvar=log_var_z)
+
         x_hat, y_hat_ls = self.decode(z)
-        loss, x_loss, y_loss_ls = self.loss_function(x_hat, x, y_hat_ls, y_ls)
+        loss, x_loss, y_loss_ls = self.loss_function(pzx, x_hat, x, y_hat_ls, y_ls)
         return z, x_loss, y_loss_ls, loss
 
     def training_step(self, batch, batch_idx):

@@ -63,7 +63,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    LATEND_DIM = 5
+    LATEND_DIM = 10
     SEQ_LEN = 500
     SEQ_LEN_Y = 100
     KERNEL_SIZE = 15
