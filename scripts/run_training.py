@@ -63,23 +63,20 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    LATEND_DIM = 10
+    LATEND_DIM = 5
     SEQ_LEN = 500
     SEQ_LEN_Y = 100
-    KERNEL_SIZE = 15
+    KERNEL_SIZE = 13
     BATCH_SIZE = 128
+    MAX_EPOCHS = 50
 
     # vanila tcn ae
     if args.model == "VanillaTcnAE":
         model_args = dict(
-            enc_tcn1_in_dims=[51, 50, 20,],# 30, 20],
-            enc_tcn1_out_dims=[50, 20, 10],#, 20, 10],
-            enc_tcn2_in_dims=[10, 6, 3],#, 4, 3],
-            enc_tcn2_out_dims=[6, 3, 1],#, 3, 1],
-            # enc_tcn1_in_dims=[51, 50, 40, 30, 20],
-            # enc_tcn1_out_dims=[50, 40, 30, 20, 10],
-            # enc_tcn2_in_dims=[10, 6, 5, 4, 3],
-            # enc_tcn2_out_dims=[6, 5, 4, 3, 1],
+            enc_tcn1_in_dims=[51, 100, 50, 40, 30],
+            enc_tcn1_out_dims=[100, 50, 40, 30, 20],
+            enc_tcn2_in_dims=[20, 10, 8, 6, 3],
+            enc_tcn2_out_dims=[10, 8, 6, 3, 1],
             latent_dim=LATEND_DIM,
             kernel_size=KERNEL_SIZE,
             seq_len=SEQ_LEN,
@@ -88,12 +85,14 @@ if __name__ == "__main__":
 
         dm_args = dict(
             data_path_train=const.SWAT_TRAIN_PATH,
-            data_path_val=const.SWAT_TRAIN_PATH,
+            data_path_val=const.SWAT_VAL_PATH,
             seq_len_x=SEQ_LEN,
             cols=const.SWAT_SENSOR_COLS,
             symbols_dct=const.SWAT_SYMBOLS_MAP,
             batch_size=BATCH_SIZE,
             dl_workers=12,
+            val_ts_start="2015-12-29 19:00:00",
+            val_ts_end="2015-12-29 22:00:00",
         )
         run_training(
             model_module="diag_vae.vanilla_tcn_ae",
@@ -102,17 +101,17 @@ if __name__ == "__main__":
             data_module_args=dm_args,
             log_dir="logs",
             num_devices=1,
-            max_epochs=500,
+            max_epochs=MAX_EPOCHS,
             checkpoint_dir=args.checkpoint_path,
         )
 
     # diag tcn
     if args.model == "DiagTcnAE":
         model_args = dict(
-            enc_tcn1_in_dims=[51, 50, 40, 30, 20],
-            enc_tcn1_out_dims=[50, 40, 30, 20, 10],
-            enc_tcn2_in_dims=[10, 6, 5, 4, 3],
-            enc_tcn2_out_dims=[6, 5, 4, 3, 1],
+            enc_tcn1_in_dims=[51, 40, 20, 15, 10],
+            enc_tcn1_out_dims=[40, 20, 15, 10, 10],
+            enc_tcn2_in_dims=[10, 8, 6, 5, 3],
+            enc_tcn2_out_dims=[8, 6, 5, 3, 1],
             component_output_dims=[
                 len(const.SWAT_SYMBOLS_MAP[k]) for k in const.SWAT_SYMBOLS_MAP.keys()
             ],
@@ -124,13 +123,16 @@ if __name__ == "__main__":
 
         dm_args = dict(
             data_path_train=const.SWAT_TRAIN_PATH,
-            data_path_val=const.SWAT_TRAIN_PATH,
+            data_path_val=const.SWAT_VAL_PATH,
             seq_len_x=SEQ_LEN,
             cols=const.SWAT_SENSOR_COLS,
             symbols_dct=const.SWAT_SYMBOLS_MAP,
             batch_size=BATCH_SIZE,
             dl_workers=12,
+            val_ts_start="2015-12-29 19:00:00",
+            val_ts_end="2015-12-29 22:00:00",
         )
+
         run_training(
             model_module="diag_vae.diag_tcn_ae",
             model_class_name="DiagTcnAE",
@@ -138,17 +140,21 @@ if __name__ == "__main__":
             data_module_args=dm_args,
             log_dir="logs",
             num_devices=1,
-            max_epochs=500,
+            max_epochs=MAX_EPOCHS,
             checkpoint_dir=args.checkpoint_path,
         )
 
     # diag tcn predictor
     if args.model == "DiagTcnAePredictor":
         model_args = dict(
-            enc_tcn1_in_dims=[51, 50, 20,],# 30, 20],
-            enc_tcn1_out_dims=[50, 20, 10],#, 20, 10],
-            enc_tcn2_in_dims=[10, 6, 3],#, 4, 3],
-            enc_tcn2_out_dims=[6, 3, 1],#, 3, 1],
+            enc_tcn1_in_dims=[
+                51,
+                50,
+                20,
+            ],  # 30, 20],
+            enc_tcn1_out_dims=[50, 20, 10],  # , 20, 10],
+            enc_tcn2_in_dims=[10, 6, 3],  # , 4, 3],
+            enc_tcn2_out_dims=[6, 3, 1],  # , 3, 1],
             component_output_dims=[
                 len(const.SWAT_SYMBOLS_MAP[k]) for k in const.SWAT_SYMBOLS_MAP.keys()
             ],
@@ -176,6 +182,6 @@ if __name__ == "__main__":
             data_module_args=dm_args,
             log_dir="logs",
             num_devices=1,
-            max_epochs=500,
+            max_epochs=MAX_EPOCHS,
             checkpoint_dir=args.checkpoint_path,
         )

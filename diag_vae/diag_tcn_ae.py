@@ -51,7 +51,8 @@ class DiagTcnAE(pl.LightningModule):
                     tcn2_out_dims=tcn_output_dims,
                     kernel_size=kernel_size,
                     latent_dim=latent_dim,
-                    seq_len=seq_len,
+                    tcn1_seq_len=400,
+                    tcn2_seq_len=seq_len,
                 )
             )
 
@@ -64,18 +65,23 @@ class DiagTcnAE(pl.LightningModule):
     def forward(self, x):
         return self.encode(x)
 
-    def get_sample_component_recon_error(self, x, x_ls):
+    def predict_step(self, batch, batch_idx: int, dataloader_idx: int = 0):
+        x, x_ls, _ = batch
         z = self.encode(x)
         x_hat_ls = self.decode(z)
-         
+
         comp_mse_ls = [
-            torch.mean(torch.mean((y - y_hat) ** 2, dim=2), dim=1).detach().numpy()
-            for y, y_hat in zip(x_ls, x_hat_ls)
+            torch.mean(torch.mean((x - x_hat) ** 2, dim=2), dim=1)
+            for x, x_hat in zip(x_ls, x_hat_ls)
         ]
         return comp_mse_ls
 
     @staticmethod
     def loss_function(x_ls, x_hat_ls):
+        # breakpoint()
+        # x = torch.cat(x_ls, dim=1)
+        # x_hat = torch.cat(x_hat_ls, dim=1)
+        # loss = nn.MSELoss()(x, x_hat)
         loss_ls = [nn.MSELoss()(x, x_hat) for x, x_hat in zip(x_ls, x_hat_ls)]
         loss = torch.mean(torch.stack(loss_ls))
         return loss
@@ -90,6 +96,12 @@ class DiagTcnAE(pl.LightningModule):
         x, x_comp_ls, _ = batch
         _, _, loss = self.shared_eval(x, x_comp_ls)
         self.log("train_loss", loss)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        x, x_comp_ls, _ = batch
+        _, _, loss = self.shared_eval(x, x_comp_ls)
+        self.log("val_loss", loss)
         return loss
 
     def configure_optimizers(self):

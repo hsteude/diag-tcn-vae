@@ -61,34 +61,31 @@ class TCN(nn.Module):
 
     def forward(self, x):
         return self.net(x)
-
-
 class Decoder(nn.Module):
     def __init__(
         self,
-        tcn1_in_dims: list[int],
-        tcn1_out_dims: list[int],
-        tcn2_in_dims: list[int],
-        tcn2_out_dims: list[int],
+        tcn1_in_dims: list,
+        tcn1_out_dims: list,
+        tcn2_in_dims: list,
+        tcn2_out_dims: list,
         kernel_size: int = 15,
-        latent_dim: int = 10,
-        seq_len: int = 1000,
+        latent_dim: int = 3,
+        fc_in_out_dim: int = 10,
+        tcn1_seq_len: int = 50,
+        tcn2_seq_len: int = 50,
     ) -> None:
         super(Decoder, self).__init__()
         self.latent_dim = latent_dim
-        size_fc_in_out = int(0.25 * seq_len)
-        size_tcn1_in = int(0.5 * seq_len)
-        size_tcn2_in = seq_len
 
         self.fc_in = nn.Linear(
             in_features=latent_dim,
             out_features=int(
-                size_fc_in_out * tcn1_in_dims[0],
+                fc_in_out_dim * tcn1_in_dims[0],
             ),
         )
 
         # tcn1
-        self.upsampler1 = torch.nn.Upsample(size=size_tcn1_in, mode="nearest")
+        self.upsampler1 = torch.nn.Upsample(size=tcn1_seq_len, mode="nearest")
         self.tcn1 = TCN(
             in_dims=tcn1_in_dims,
             out_dims=tcn1_out_dims,
@@ -96,7 +93,7 @@ class Decoder(nn.Module):
         )
 
         # tcn2
-        self.upsampler2 = torch.nn.Upsample(size=size_tcn2_in, mode="nearest")
+        self.upsampler2 = torch.nn.Upsample(size=tcn2_seq_len, mode="nearest")
         self.tcn2 = TCN(
             in_dims=tcn2_in_dims,
             out_dims=tcn2_out_dims,
@@ -111,6 +108,8 @@ class Decoder(nn.Module):
         out = self.upsampler2(out)
         out = self.tcn2(out)
         return out
+
+
 
 
 class VaeEncoder(nn.Module):

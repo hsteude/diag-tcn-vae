@@ -15,7 +15,7 @@ class VanillaTcnAE(pl.LightningModule):
         enc_tcn2_in_dims: list = [10, 6, 5, 4, 3],
         enc_tcn2_out_dims: list = [6, 5, 4, 3, 1],
         latent_dim: int = 10,
-        kernel_size: int = 15,
+        kernel_size: int = 13,
         seq_len: int = 500,
         lr: float = 1e-3,
         *args,
@@ -47,7 +47,8 @@ class VanillaTcnAE(pl.LightningModule):
             tcn2_out_dims=dec_tcn2_out_dims,
             kernel_size=kernel_size,
             latent_dim=latent_dim,
-            seq_len=seq_len,
+            tcn1_seq_len=400,
+            tcn2_seq_len=seq_len,
         )
 
     def encode(self, x):
@@ -59,10 +60,11 @@ class VanillaTcnAE(pl.LightningModule):
     def forward(self, x):
         return self.encode(x)
 
-    def get_sample_component_recon_error(self, x):
+    def predict_step(self, batch, batch_idx: int, dataloader_idx: int = 0):
+        x, _, _ = batch
         z = self.encode(x)
         x_hat = self.decode(z)
-        mse_per_sig = torch.mean((x - x_hat) ** 2, dim=2).detach().numpy()
+        mse_per_sig = torch.mean((x - x_hat) ** 2, dim=2)
         number_comp_signals = [
             len(const.SWAT_SYMBOLS_MAP[k]) for k in const.SWAT_SYMBOLS_MAP.keys()
         ]
@@ -71,7 +73,7 @@ class VanillaTcnAE(pl.LightningModule):
         for start, end in zip(
             [0] + number_comp_signals_cumsum[:-1], number_comp_signals_cumsum
         ):
-            comp_mse_ls.append(np.array(mse_per_sig[:, start:end].mean(axis=1)))
+            comp_mse_ls.append(torch.mean(mse_per_sig[:, start:end], dim=1))
         return comp_mse_ls
 
     @staticmethod
@@ -88,6 +90,12 @@ class VanillaTcnAE(pl.LightningModule):
         x, _, _ = batch
         _, _, loss = self.shared_eval(x)
         self.log("train_loss", loss)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        x, _, _ = batch
+        _, _, loss = self.shared_eval(x)
+        self.log("val_loss", loss)
         return loss
 
     def configure_optimizers(self):

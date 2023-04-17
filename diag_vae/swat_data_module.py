@@ -14,22 +14,40 @@ class SwatDataset(Dataset):
         self,
         cols: list[str],
         symbols_dct: dict,
-        data_path: str,
-        scale: bool,
+        train_data_path: str,
+        val_data_path: str,
         seq_len_x: int,
         seq_len_y: int = 200,
+        split: str = "train",
+        val_ts_start: str = "2015-12-28 18:00:00",
+        val_ts_end: str = "2015-12-29 06:00:00",
     ):
-        df = pd.read_parquet(data_path)
+        df_train = pd.read_parquet(train_data_path)
+        df_val = pd.read_parquet(val_data_path)
 
-        df = df[cols]
-        if scale:
-            self.scaler = StandardScaler()
-            df = pd.DataFrame(
-                self.scaler.fit_transform(df.values),
-                columns=df.columns,
-                index=df.index,
-            )
-        self.df = df
+        df_train = df_train[cols]
+        df_val = df_val[cols]
+        self.scaler = StandardScaler()
+        df_train_sc = pd.DataFrame(
+            self.scaler.fit_transform(df_train.values),
+            columns=df_train.columns,
+            index=df_train.index,
+        )
+        df_train = df_train
+        df_train_sc = df_train_sc
+        df_val_sc = pd.DataFrame(
+            self.scaler.transform(df_val.values),
+            columns=df_val.columns,
+            index=df_val.index,
+        )
+
+        if split == "train":
+            self.df = df_train_sc['2015-12-22 16:30:00':'2015-12-27 23:59:59']
+        elif split == "val":
+            self.df = df_train_sc['2015-12-28 00:00:00':'2015-12-28 09:59:55']
+        elif split == "test":
+            self.df = df_val_sc
+
         self.x = torch.from_numpy(self.df.values.astype(np.float32))
         self.comp_ls = [
             torch.from_numpy(self.df[symbols_dct[comp]].values.astype(np.float32))
@@ -66,6 +84,8 @@ class SwatDataModule(pl.LightningDataModule):
         seq_len_x: int = 1000,
         seq_len_y: int = 250,
         dl_workers: int = 8,
+        val_ts_start: str = "2015-12-28 18:00:00",
+        val_ts_end: str = "2015-12-29 06:00:00",
     ):
         super().__init__()
         self.batch_size = batch_size
@@ -73,16 +93,19 @@ class SwatDataModule(pl.LightningDataModule):
         self.cols = cols
         self.num_workers = dl_workers
 
-        self.train_ds, self.val_ds = [
+        self.train_ds, self.val_ds, self.test_ds = [
             SwatDataset(
-                data_path=path,
+                train_data_path=data_path_train,
+                val_data_path=data_path_val,
                 seq_len_x=seq_len_x,
                 seq_len_y=seq_len_y,
                 cols=cols,
                 symbols_dct=symbols_dct,
-                scale=True,
+                split=split,
+                val_ts_start=val_ts_start,
+                val_ts_end=val_ts_end,
             )
-            for path in (data_path_train, data_path_val)
+            for split in ["train", "val", "test"]
         ]
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
@@ -96,6 +119,14 @@ class SwatDataModule(pl.LightningDataModule):
     def val_dataloader(self) -> EVAL_DATALOADERS:
         return DataLoader(
             self.val_ds,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+        )
+
+    def test_dataloader(self) -> EVAL_DATALOADERS:
+        return DataLoader(
+            self.test_ds,
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,

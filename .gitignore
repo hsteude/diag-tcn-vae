@@ -166,5 +166,6 @@ logs/*
 
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+logs.backup/*
 
 .DS_Store
