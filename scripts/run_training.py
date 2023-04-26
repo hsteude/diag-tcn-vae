@@ -40,7 +40,7 @@ def run_training(
     early_stop_callback = EarlyStopping(
         monitor="val_loss",
         mode="min",
-        patience=10,
+        patience=20,
         strict=True,
     )
 

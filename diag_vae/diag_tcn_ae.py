@@ -113,7 +113,7 @@ class DiagTcnAE(pl.LightningModule):
         scheduler = ReduceLROnPlateau(
             optimizer,
             factor=0.5,
-            patience=5,
+            patience=10,
             min_lr=1e-5,
         )
         return [optimizer], [
