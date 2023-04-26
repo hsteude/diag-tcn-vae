@@ -79,11 +79,11 @@ class DiagTcnAE(pl.LightningModule):
     @staticmethod
     def loss_function(x_ls, x_hat_ls):
         # breakpoint()
-        # x = torch.cat(x_ls, dim=1)
-        # x_hat = torch.cat(x_hat_ls, dim=1)
-        # loss = nn.MSELoss()(x, x_hat)
-        loss_ls = [nn.MSELoss()(x, x_hat) for x, x_hat in zip(x_ls, x_hat_ls)]
-        loss = torch.mean(torch.stack(loss_ls))
+        x = torch.cat(x_ls, dim=1)
+        x_hat = torch.cat(x_hat_ls, dim=1)
+        loss = nn.MSELoss()(x, x_hat)
+        # loss_ls = [nn.MSELoss()(x, x_hat) for x, x_hat in zip(x_ls, x_hat_ls)]
+        # loss = torch.mean(torch.stack(loss_ls))
         return loss
 
     def shared_eval(self, x, x_comp_ls):
@@ -113,7 +113,7 @@ class DiagTcnAE(pl.LightningModule):
         scheduler = ReduceLROnPlateau(
             optimizer,
             factor=0.5,
-            patience=25,
+            patience=5,
             min_lr=1e-5,
         )
         return [optimizer], [

@@ -2,6 +2,9 @@ from pytorch_lightning.loggers import TensorBoardLogger
 import pytorch_lightning as pl
 import torch
 from diag_vae.swat_data_module import SwatDataModule
+
+# from lightning.pytorch.callbacks.early_stopping import EarlyStopping
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 import importlib
 import os
 
@@ -34,11 +37,19 @@ def run_training(
     accelerator = "gpu" if torch.cuda.is_available() else "cpu"
     devices = num_devices
 
+    early_stop_callback = EarlyStopping(
+        monitor="val_loss",
+        mode="min",
+        patience=10,
+        strict=True,
+    )
+
     trainer = pl.Trainer(
         max_epochs=max_epochs,
         accelerator=accelerator,
         devices=devices,
         logger=logger,
+        callbacks=[early_stop_callback],
     )
     torch.set_float32_matmul_precision("medium")
     trainer.fit(model, datamodule=dm)
@@ -63,12 +74,14 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    LATEND_DIM = 5
+    LATEND_DIM = 100
     SEQ_LEN = 500
     SEQ_LEN_Y = 100
     KERNEL_SIZE = 13
     BATCH_SIZE = 128
-    MAX_EPOCHS = 50
+    MAX_EPOCHS = 10000
+    NUM_TRAIN_SAMPLES = 50_000
+    NUM_VAL_SAMPLES = 5_000
 
     # vanila tcn ae
     if args.model == "VanillaTcnAE":
@@ -91,8 +104,8 @@ if __name__ == "__main__":
             symbols_dct=const.SWAT_SYMBOLS_MAP,
             batch_size=BATCH_SIZE,
             dl_workers=12,
-            val_ts_start="2015-12-29 19:00:00",
-            val_ts_end="2015-12-29 22:00:00",
+            num_train_samples=NUM_TRAIN_SAMPLES,
+            num_val_samples=NUM_VAL_SAMPLES,
         )
         run_training(
             model_module="diag_vae.vanilla_tcn_ae",
@@ -129,8 +142,8 @@ if __name__ == "__main__":
             symbols_dct=const.SWAT_SYMBOLS_MAP,
             batch_size=BATCH_SIZE,
             dl_workers=12,
-            val_ts_start="2015-12-29 19:00:00",
-            val_ts_end="2015-12-29 22:00:00",
+            num_train_samples=NUM_TRAIN_SAMPLES,
+            num_val_samples=NUM_VAL_SAMPLES,
         )
 
         run_training(

@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
+import random
 
 
 class SwatDataset(Dataset):
@@ -19,8 +20,8 @@ class SwatDataset(Dataset):
         seq_len_x: int,
         seq_len_y: int = 200,
         split: str = "train",
-        val_ts_start: str = "2015-12-28 18:00:00",
-        val_ts_end: str = "2015-12-29 06:00:00",
+        num_train_samples: int = 10000,
+        num_val_samples: int = 1000,
     ):
         df_train = pd.read_parquet(train_data_path)
         df_val = pd.read_parquet(val_data_path)
@@ -42,18 +43,28 @@ class SwatDataset(Dataset):
         )
 
         if split == "train":
-            self.df = df_train_sc['2015-12-22 16:30:00':'2015-12-27 23:59:59']
+            self.df = df_train_sc["2015-12-22 16:30:00":"2015-12-27 23:59:59"]
+            self.sample_index_list = random.sample(
+                list(range(0, len(self.df.index) - seq_len_x - seq_len_y)),
+                num_train_samples,
+            )
         elif split == "val":
-            self.df = df_train_sc['2015-12-28 00:00:00':'2015-12-28 09:59:55']
+            self.df = df_train_sc["2015-12-28 00:00:00":"2015-12-28 09:59:55"]
+            self.sample_index_list = random.sample(
+                list(range(0, len(self.df.index) - seq_len_x - seq_len_y)),
+                num_val_samples,
+            )
         elif split == "test":
             self.df = df_val_sc
-
+            self.sample_index_list = list(
+                range(0, len(self.df.index) - seq_len_x - seq_len_y)
+            )
         self.x = torch.from_numpy(self.df.values.astype(np.float32))
         self.comp_ls = [
             torch.from_numpy(self.df[symbols_dct[comp]].values.astype(np.float32))
             for comp in symbols_dct.keys()
         ]
-        self.length = len(self.df) - seq_len_x - seq_len_y
+        self.length = len(self.sample_index_list)
         self.seq_len_x = seq_len_x
         self.seq_len_y = seq_len_y
 
@@ -61,13 +72,12 @@ class SwatDataset(Dataset):
         return self.length
 
     def __getitem__(self, index):
+        idx = self.sample_index_list[index]
         return (
-            self.x[index : index + self.seq_len_x, :].T,
-            [comp[index : index + self.seq_len_x, :].T for comp in self.comp_ls],
+            self.x[idx : idx + self.seq_len_x, :].T,
+            [comp[idx : idx + self.seq_len_x, :].T for comp in self.comp_ls],
             [
-                comp[
-                    index + self.seq_len_x : index + self.seq_len_x + self.seq_len_y, :
-                ].T
+                comp[idx + self.seq_len_x : idx + self.seq_len_x + self.seq_len_y, :].T
                 for comp in self.comp_ls
             ],
         )
@@ -84,8 +94,8 @@ class SwatDataModule(pl.LightningDataModule):
         seq_len_x: int = 1000,
         seq_len_y: int = 250,
         dl_workers: int = 8,
-        val_ts_start: str = "2015-12-28 18:00:00",
-        val_ts_end: str = "2015-12-29 06:00:00",
+        num_train_samples: int = 10000,
+        num_val_samples: int = 1000,
     ):
         super().__init__()
         self.batch_size = batch_size
@@ -102,8 +112,8 @@ class SwatDataModule(pl.LightningDataModule):
                 cols=cols,
                 symbols_dct=symbols_dct,
                 split=split,
-                val_ts_start=val_ts_start,
-                val_ts_end=val_ts_end,
+                num_train_samples=num_train_samples,
+                num_val_samples=num_val_samples,
             )
             for split in ["train", "val", "test"]
         ]
