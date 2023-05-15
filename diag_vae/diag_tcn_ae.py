@@ -8,10 +8,14 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 class DiagTcnAE(pl.LightningModule):
     def __init__(
         self,
-        enc_tcn1_in_dims: list = [51, 50, 40, 30, 20],
+        enc_tcn1_in_dims: list = [154, 50, 40, 30, 20],
         enc_tcn1_out_dims: list = [50, 40, 30, 20, 10],
         enc_tcn2_in_dims: list = [10, 6, 5, 4, 3],
         enc_tcn2_out_dims: list = [6, 5, 4, 3, 1],
+        dec_tcn1_in_dims: list = [1, 3, 5, 6, 8],
+        dec_tcn1_out_dims: list = [3, 5, 6, 8, 10],
+        dec_tcn2_in_dims: list = [10, 10, 15, 20, 40],
+        dec_tcn2_out_dims: list = [10, 15, 20, 40, 154],
         latent_dim: int = 10,
         seq_len: int = 500,
         kernel_size: int = 15,
@@ -25,10 +29,6 @@ class DiagTcnAE(pl.LightningModule):
         self.save_hyperparameters()
         self.lr = lr
 
-        dec_tcn1_in_dims = enc_tcn2_out_dims[::-1]
-        dec_tcn1_out_dims = enc_tcn2_in_dims[::-1]
-        dec_tcn2_in_dims = enc_tcn1_out_dims[::-1]
-        dec_tcn2_out_dims = enc_tcn1_in_dims[::-1]
 
         self.encoder = Encoder(
             tcn1_in_dims=enc_tcn1_in_dims,

@@ -166,6 +166,7 @@ logs/*
 
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+data/*
 logs.backup/*
 logs.backup2/*
 
