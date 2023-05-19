@@ -3,7 +3,6 @@ import pandas as pd
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data import Dataset
 import torch
-from sklearn.preprocessing import StandardScaler
 
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
@@ -19,37 +18,43 @@ class BERFIPLDataSet(Dataset):
         seq_len_x: int,
         split: str,
         val_split: float = .7,
+        test_data_path: str = './data/raw/data/ds1/ds1l.csv',
+        diag_ls: bool = True
     ):
+        self.SCALING_CONST = 100_000
         df = pd.read_csv(data_path)
         df = df[cols]
+        for col in [c for c in df.columns if c.endswith('.p')]:
+            df[col] = df[col]/self.SCALING_CONST
         max_train_idx = int(val_split*len(df))
         df_train = df[:max_train_idx]
         df_val = df[max_train_idx:]
 
-        self.scaler = StandardScaler()
-        df_train_sc = pd.DataFrame(
-            self.scaler.fit_transform(df_train.values),
-            columns=df_train.columns,
-            index=df_train.index,
-        )
-        df_val_sc = pd.DataFrame(
-            self.scaler.transform(df_val.values),
-            columns=df_val.columns,
-            index=df_val.index,
-        )
+        df_test = pd.read_csv(test_data_path)
+        df_test = df_test[cols]
+        for col in [c for c in df_test.columns if c.endswith('.p')]:
+            df_test[col] = df_test[col]/self.SCALING_CONST
+
+
         if split == 'train':
-            self.df_sc = df_train_sc
+            self.df_sc = df_train
 
         if split == 'val':
-            self.df_sc = df_val_sc
+            self.df_sc = df_val
+
+        if split == 'test':
+            self.df_sc = df_test
 
         self.len = len(self.df_sc.index) - seq_len_x
 
         self.x = torch.from_numpy(self.df_sc.values.astype(np.float32))
-        self.comp_ls = [
-            torch.from_numpy(self.df_sc[symbols_dct[comp]].values.astype(np.float32))
-            for comp in symbols_dct.keys()
-        ]
+        if diag_ls:
+            self.comp_ls = [
+                torch.from_numpy(self.df_sc[symbols_dct[comp]].values.astype(np.float32))
+                for comp in symbols_dct.keys()
+            ]
+        else:
+            self.comp_ls = [torch.from_numpy(self.df_sc[cols].values.astype(np.float32))]
         self.seq_len_x = seq_len_x
 
     def __len__(self):
@@ -75,6 +80,7 @@ class BERFIPLDataModule(pl.LightningDataModule):
         data_path_test_c: str = None,
         data_path_test_l: str = None,
         data_path_test_lc: str = None,
+        diag_ls: bool = True
     ):
         super().__init__()
         self.batch_size = batch_size
@@ -87,7 +93,8 @@ class BERFIPLDataModule(pl.LightningDataModule):
             symbols_dct=symbols_dct,
             data_path=data_path_normal,
             seq_len_x=seq_len_x,
-            split=split
+            split=split,
+            diag_ls=diag_ls,
         ) for split in ('train', 'val')]
 
 
@@ -119,6 +126,20 @@ if __name__ == "__main__":
     # )
     #
     # ds.__getitem__(0)
+    test_data_paths = ['./data/raw/data/ds1/ds1n.csv',
+                       './data/raw/data/ds1/ds1c.csv',
+                       './data/raw/data/ds1/ds1l.csv',
+                       './data/raw/data/ds1/ds1lc.csv']
+
+    ds_n, ds_c, ds_l, ds_lc = [BERFIPLDataSet(
+            cols=const.BERFIPL_COLS,
+            symbols_dct=const.BERFIPL_SIGNALS_MAP,
+            data_path=test_data_paths[0],
+            seq_len_x=500,
+            split='test',
+            val_split=.99,
+            test_data_path=path
+    ) for path in test_data_paths]
 
     dm = BERFIPLDataModule(
         data_path_normal=  const.BERFIPL_RAW_DATA_PATH_NORMAL,
