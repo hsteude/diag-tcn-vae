@@ -118,6 +118,7 @@ if __name__ == "__main__":
             model_args=model_args,
             data_module_args=dm_args,
             log_dir="logs",
+            beta=.1,
             num_devices=1,
             max_epochs=MAX_EPOCHS,
             checkpoint_dir=args.checkpoint_path,

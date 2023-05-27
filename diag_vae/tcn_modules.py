@@ -123,7 +123,7 @@ class VaeEncoder(nn.Module):
         latent_dim: int = 10,
         seq_len: int = 1000,
     ) -> None:
-        super(Encoder, self).__init__()
+        super(VaeEncoder, self).__init__()
 
         # TCN1
         self.tcn1 = TCN(
@@ -139,11 +139,11 @@ class VaeEncoder(nn.Module):
 
         self.fc_z_mu = nn.Linear(
             in_features=int(0.25 * seq_len * tcn2_out_dims[-1]),
-            out_features=latent_gaussian_dim,
+            out_features=latent_dim,
         )
         self.fc_z_logvar = nn.Linear(
             in_features=int(0.25 * seq_len * tcn2_out_dims[-1]),
-            out_features=latent_gaussian_dim,
+            out_features=latent_dim,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -154,9 +154,7 @@ class VaeEncoder(nn.Module):
         out = out.flatten(start_dim=1)
         mu_z = self.fc_z_mu(out)
         log_var_z = self.fc_z_logvar(out)
-        return mu_z, log_var_z
-
-        return out
+        return mu_z, torch.nn.Sigmoid()(log_var_z)
 
 
 class Encoder(nn.Module):

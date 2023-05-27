@@ -25,6 +25,7 @@ class SwatDataset(Dataset):
     ):
         df_train = pd.read_parquet(train_data_path)
         df_val = pd.read_parquet(val_data_path)
+        random.seed(42)
 
         df_train = df_train[cols]
         df_val = df_val[cols]

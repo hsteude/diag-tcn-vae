@@ -5,6 +5,10 @@ DATA_DIR_PATH = "./data"
 RAW_DATA_DIR_PATH = os.path.join(DATA_DIR_PATH, "raw")
 PROC_DATA_DIR_PATH = os.path.join(DATA_DIR_PATH, "processed")
 
+RESULTS_SWAT_TRAIN_PATH = os.path.join(DATA_DIR_PATH, "swat_results_train.parquet")
+RESULTS_SWAT_TEST_PATH = os.path.join(DATA_DIR_PATH, "swat_results_test.parquet")
+
+
 # SWaT
 SWAT_RAW_FOLDER_PATH = os.path.join(RAW_DATA_DIR_PATH, "SWaT.A1 _ A2_Dec 2015")
 SWAT_RAW_LABEL_PATH = os.path.join(SWAT_RAW_FOLDER_PATH, "List_of_attacks_Final.xlsx")

@@ -163,6 +163,7 @@ cython_debug/
 data/raw/*
 data/processed/*
 logs/*
+figures/*
 
 !data/raw/.gitkeep
 !data/processed/.gitkeep

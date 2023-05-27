@@ -74,7 +74,7 @@ class VanillaTcnAE(pl.LightningModule):
             [0] + number_comp_signals_cumsum[:-1], number_comp_signals_cumsum
         ):
             comp_mse_ls.append(torch.mean(mse_per_sig[:, start:end], dim=1))
-        return comp_mse_ls
+        return comp_mse_ls, z, x_hat
 
     @staticmethod
     def loss_function(x, x_hat):
