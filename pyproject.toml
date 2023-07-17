@@ -28,6 +28,9 @@ openpyxl = "^3.1.2"
 pyarrow = "^11.0.0"
 lightning = "^2.0.2"
 loguru = "^0.7.0"
+kfp = "^2.0.1"
+s3fs = "^2023.6.0"
+rpy2 = "^3.5.13"
 
 
 [build-system]
