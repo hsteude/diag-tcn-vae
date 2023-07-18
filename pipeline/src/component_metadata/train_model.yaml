@@ -1,0 +1,199 @@
+# PIPELINE DEFINITION
+# Name: train-model
+# Inputs:
+#    batch_size: int
+#    df_train: system.Dataset
+#    df_val: system.Dataset
+#    dropout: float [Default: 0.1]
+#    input_cols: list
+#    kernel_size: int [Default: 15.0]
+#    learning_rate: float [Default: 0.001]
+#    max_epochs: int [Default: 3.0]
+#    num_signals: int [Default: 52.0]
+#    num_workers: int
+#    scaler: system.Artifact
+#    subsystems_map: dict
+# Outputs:
+#    logs: system.Artifact
+#    trained_model: system.Model
+components:
+  comp-train-model:
+    executorLabel: exec-train-model
+    inputDefinitions:
+      artifacts:
+        df_train:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        df_val:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        scaler:
+          artifactType:
+            schemaTitle: system.Artifact
+            schemaVersion: 0.0.1
+      parameters:
+        batch_size:
+          parameterType: NUMBER_INTEGER
+        dropout:
+          defaultValue: 0.1
+          isOptional: true
+          parameterType: NUMBER_DOUBLE
+        input_cols:
+          parameterType: LIST
+        kernel_size:
+          defaultValue: 15.0
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        learning_rate:
+          defaultValue: 0.001
+          isOptional: true
+          parameterType: NUMBER_DOUBLE
+        max_epochs:
+          defaultValue: 3.0
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        num_signals:
+          defaultValue: 52.0
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        num_workers:
+          parameterType: NUMBER_INTEGER
+        subsystems_map:
+          parameterType: STRUCT
+    outputDefinitions:
+      artifacts:
+        logs:
+          artifactType:
+            schemaTitle: system.Artifact
+            schemaVersion: 0.0.1
+        trained_model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+deploymentSpec:
+  executors:
+    exec-train-model:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - train_model
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet     --no-warn-script-location 'pytorch_lightning'\
+          \ 'torch' 'loguru' 'numpy' 'pandas' 'scikit-learn' 'pyarrow' 'tensorboard'\
+          \ && \"$0\" \"$@\"\n"
+        - python3
+        - -m
+        - kfp.components.executor_main
+        image: gitlab.kiss.space.unibw-hamburg.de:4567/kiss/diag-tcn-vae/diag-tcn-trainer:v11
+pipelineInfo:
+  name: train-model
+root:
+  dag:
+    outputs:
+      artifacts:
+        logs:
+          artifactSelectors:
+          - outputArtifactKey: logs
+            producerSubtask: train-model
+        trained_model:
+          artifactSelectors:
+          - outputArtifactKey: trained_model
+            producerSubtask: train-model
+    tasks:
+      train-model:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-train-model
+        inputs:
+          artifacts:
+            df_train:
+              componentInputArtifact: df_train
+            df_val:
+              componentInputArtifact: df_val
+            scaler:
+              componentInputArtifact: scaler
+          parameters:
+            batch_size:
+              componentInputParameter: batch_size
+            dropout:
+              componentInputParameter: dropout
+            input_cols:
+              componentInputParameter: input_cols
+            kernel_size:
+              componentInputParameter: kernel_size
+            learning_rate:
+              componentInputParameter: learning_rate
+            max_epochs:
+              componentInputParameter: max_epochs
+            num_signals:
+              componentInputParameter: num_signals
+            num_workers:
+              componentInputParameter: num_workers
+            subsystems_map:
+              componentInputParameter: subsystems_map
+        taskInfo:
+          name: train-model
+  inputDefinitions:
+    artifacts:
+      df_train:
+        artifactType:
+          schemaTitle: system.Dataset
+          schemaVersion: 0.0.1
+      df_val:
+        artifactType:
+          schemaTitle: system.Dataset
+          schemaVersion: 0.0.1
+      scaler:
+        artifactType:
+          schemaTitle: system.Artifact
+          schemaVersion: 0.0.1
+    parameters:
+      batch_size:
+        parameterType: NUMBER_INTEGER
+      dropout:
+        defaultValue: 0.1
+        isOptional: true
+        parameterType: NUMBER_DOUBLE
+      input_cols:
+        parameterType: LIST
+      kernel_size:
+        defaultValue: 15.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      learning_rate:
+        defaultValue: 0.001
+        isOptional: true
+        parameterType: NUMBER_DOUBLE
+      max_epochs:
+        defaultValue: 3.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      num_signals:
+        defaultValue: 52.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      num_workers:
+        parameterType: NUMBER_INTEGER
+      subsystems_map:
+        parameterType: STRUCT
+  outputDefinitions:
+    artifacts:
+      logs:
+        artifactType:
+          schemaTitle: system.Artifact
+          schemaVersion: 0.0.1
+      trained_model:
+        artifactType:
+          schemaTitle: system.Model
+          schemaVersion: 0.0.1
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.0.1

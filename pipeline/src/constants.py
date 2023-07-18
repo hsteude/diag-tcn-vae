@@ -1,4 +1,63 @@
 RAW_DATA_DIR = "hs-bucket/diag-tcn-data/raw/TEP-KAGGLE"
+SUBSYSTEM_MAP = {
+    "InputFeed": [
+        "xmeas_1",
+        "xmeas_2",
+        "xmeas_3",
+        "xmeas_4",
+        "xmeas_5",
+    ],
+    "Reactor": [
+        "xmeas_6",
+        "xmeas_7",
+        "xmeas_8",
+        "xmeas_9",
+        "xmeas_21",
+    ],
+    "Purge": [
+        "xmeas_10",
+    ],
+    "ProductSeparator": [
+        "xmeas_11",
+        "xmeas_12",
+        "xmeas_13",
+        "xmeas_14",
+        "xmeas_22",
+    ],
+    "Stripper": [
+        "xmeas_15",
+        "xmeas_16",
+        "xmeas_17",
+        "xmeas_18",
+        "xmeas_19",
+    ],
+    "Compressor": ["xmeas_20"],
+    "ReactorFeed": [
+        "xmeas_23",
+        "xmeas_24",
+        "xmeas_25",
+        "xmeas_26",
+        "xmeas_27",
+        "xmeas_28",
+    ],
+    "PurgeGas": [
+        "xmeas_29",
+        "xmeas_30",
+        "xmeas_31",
+        "xmeas_32",
+        "xmeas_33",
+        "xmeas_34",
+        "xmeas_35",
+        "xmeas_36",
+    ],
+    "Product": [
+        "xmeas_37",
+        "xmeas_38",
+        "xmeas_39",
+        "xmeas_40",
+        "xmeas_41",
+    ],
+}
 DATA_COLS = [
     "xmeas_1",
     "xmeas_2",
