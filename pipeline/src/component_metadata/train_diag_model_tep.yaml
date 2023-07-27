@@ -1,5 +1,5 @@
 # PIPELINE DEFINITION
-# Name: train-model
+# Name: train-diag-model-tep
 # Inputs:
 #    batch_size: int
 #    df_train: system.Dataset
@@ -18,8 +18,8 @@
 #    logs_dir: system.Artifact
 #    trained_model: system.Model
 components:
-  comp-train-model:
-    executorLabel: exec-train-model
+  comp-train-diag-model-tep:
+    executorLabel: exec-train-diag-model-tep
     inputDefinitions:
       artifacts:
         df_train:
@@ -79,13 +79,13 @@ components:
             schemaVersion: 0.0.1
 deploymentSpec:
   executors:
-    exec-train-model:
+    exec-train-diag-model-tep:
       container:
         args:
         - --executor_input
         - '{{$}}'
         - --function_to_execute
-        - train_model
+        - train_diag_model_tep
         command:
         - sh
         - -c
@@ -97,9 +97,9 @@ deploymentSpec:
         - python3
         - -m
         - kfp.components.executor_main
-        image: gitlab.kiss.space.unibw-hamburg.de:4567/kiss/diag-tcn-vae/diag-tcn-trainer:v18
+        image: gitlab.kiss.space.unibw-hamburg.de:4567/kiss/diag-tcn-vae/diag-tcn-trainer:v12
 pipelineInfo:
-  name: train-model
+  name: train-diag-model-tep
 root:
   dag:
     outputs:
@@ -107,17 +107,17 @@ root:
         logs_dir:
           artifactSelectors:
           - outputArtifactKey: logs_dir
-            producerSubtask: train-model
+            producerSubtask: train-diag-model-tep
         trained_model:
           artifactSelectors:
           - outputArtifactKey: trained_model
-            producerSubtask: train-model
+            producerSubtask: train-diag-model-tep
     tasks:
-      train-model:
+      train-diag-model-tep:
         cachingOptions:
           enableCache: true
         componentRef:
-          name: comp-train-model
+          name: comp-train-diag-model-tep
         inputs:
           artifacts:
             df_train:
@@ -148,7 +148,7 @@ root:
             subsystems_map:
               componentInputParameter: subsystems_map
         taskInfo:
-          name: train-model
+          name: train-diag-model-tep
   inputDefinitions:
     artifacts:
       df_train:

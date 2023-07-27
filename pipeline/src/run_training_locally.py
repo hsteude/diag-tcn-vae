@@ -19,4 +19,6 @@ run_training(
     batch_size=128,
     num_workers=20,
     max_epochs=2,
+    model_output_path='../../data/tmp/output_model',
+    logs_path='s3://hs-bucket/logs'
 )

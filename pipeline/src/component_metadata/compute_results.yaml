@@ -1,0 +1,114 @@
+# PIPELINE DEFINITION
+# Name: compute-results
+# Inputs:
+#    df: system.Dataset
+#    model: system.Model
+#    number_of_samples: int [Default: 100.0]
+#    scaler: system.Artifact
+# Outputs:
+#    predictions: system.Dataset
+components:
+  comp-compute-results:
+    executorLabel: exec-compute-results
+    inputDefinitions:
+      artifacts:
+        df:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+        scaler:
+          artifactType:
+            schemaTitle: system.Artifact
+            schemaVersion: 0.0.1
+      parameters:
+        number_of_samples:
+          defaultValue: 100.0
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+    outputDefinitions:
+      artifacts:
+        predictions:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+deploymentSpec:
+  executors:
+    exec-compute-results:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - compute_results
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet     --no-warn-script-location 'pytorch_lightning'\
+          \ 'torch' 'loguru' 'numpy' 'pandas' 'scikit-learn' 'pyarrow' 'tensorboard'\
+          \ && \"$0\" \"$@\"\n"
+        - python3
+        - -m
+        - kfp.components.executor_main
+        image: gitlab.kiss.space.unibw-hamburg.de:4567/kiss/diag-tcn-vae/tep_compute_results:v04
+pipelineInfo:
+  name: compute-results
+root:
+  dag:
+    outputs:
+      artifacts:
+        predictions:
+          artifactSelectors:
+          - outputArtifactKey: predictions
+            producerSubtask: compute-results
+    tasks:
+      compute-results:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-compute-results
+        inputs:
+          artifacts:
+            df:
+              componentInputArtifact: df
+            model:
+              componentInputArtifact: model
+            scaler:
+              componentInputArtifact: scaler
+          parameters:
+            number_of_samples:
+              componentInputParameter: number_of_samples
+        taskInfo:
+          name: compute-results
+  inputDefinitions:
+    artifacts:
+      df:
+        artifactType:
+          schemaTitle: system.Dataset
+          schemaVersion: 0.0.1
+      model:
+        artifactType:
+          schemaTitle: system.Model
+          schemaVersion: 0.0.1
+      scaler:
+        artifactType:
+          schemaTitle: system.Artifact
+          schemaVersion: 0.0.1
+    parameters:
+      number_of_samples:
+        defaultValue: 100.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+  outputDefinitions:
+    artifacts:
+      predictions:
+        artifactType:
+          schemaTitle: system.Dataset
+          schemaVersion: 0.0.1
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.0.1

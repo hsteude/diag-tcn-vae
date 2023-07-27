@@ -7,7 +7,16 @@ seed_everything(42)
 
 
 class Conv1DResidualBlock(nn.Module):
-    def __init__(self, in_dim, out_dim, kernel_size, padding, stride, dilation):
+    def __init__(
+        self,
+        in_dim: int,
+        out_dim: int,
+        kernel_size: int,
+        padding: int,
+        stride: int,
+        dilation: int,
+        dropout: float,
+    ):
         super(Conv1DResidualBlock, self).__init__()
         self.conv1 = weight_norm(
             nn.Conv1d(
@@ -20,6 +29,8 @@ class Conv1DResidualBlock(nn.Module):
             )
         )
         self.activattion = nn.ReLU()
+        self.dropout1 = nn.Dropout(dropout)
+
         self.conv2 = weight_norm(
             nn.Conv1d(
                 out_dim,
@@ -31,18 +42,21 @@ class Conv1DResidualBlock(nn.Module):
             )
         )
         self.residual = nn.Conv1d(in_dim, out_dim, 1)
+        self.dropout2 = nn.Dropout(dropout)
 
     def forward(self, x):
         out = self.conv1(x)
         out = self.activattion(out)
+        out = self.dropout1(out)
         out = self.conv2(out)
         out = self.activattion(out)
+        out = self.dropout2(out)
         res = self.residual(x)
         return out + res
 
 
 class TCN(nn.Module):
-    def __init__(self, in_dims: list, out_dims: list, kernel_size: int):
+    def __init__(self, in_dims: list, out_dims: list, kernel_size: int, dropout: float):
         super(TCN, self).__init__()
         layers = []
         for i in range(len(in_dims)):
@@ -55,12 +69,15 @@ class TCN(nn.Module):
                     padding="same",
                     dilation=dilation,
                     stride=1,
+                    dropout=dropout,
                 )
             )
         self.net = nn.Sequential(*layers)
 
     def forward(self, x):
         return self.net(x)
+
+
 class Decoder(nn.Module):
     def __init__(
         self,
@@ -73,6 +90,7 @@ class Decoder(nn.Module):
         fc_in_out_dim: int = 10,
         tcn1_seq_len: int = 50,
         tcn2_seq_len: int = 50,
+        dropout: float = 0.5,
     ) -> None:
         super(Decoder, self).__init__()
         self.latent_dim = latent_dim
@@ -90,6 +108,7 @@ class Decoder(nn.Module):
             in_dims=tcn1_in_dims,
             out_dims=tcn1_out_dims,
             kernel_size=kernel_size,
+            dropout=dropout,
         )
 
         # tcn2
@@ -98,6 +117,7 @@ class Decoder(nn.Module):
             in_dims=tcn2_in_dims,
             out_dims=tcn2_out_dims,
             kernel_size=kernel_size,
+            dropout=dropout,
         )
 
     def forward(self, z):
@@ -110,8 +130,6 @@ class Decoder(nn.Module):
         return out
 
 
-
-
 class VaeEncoder(nn.Module):
     def __init__(
         self,
@@ -122,18 +140,25 @@ class VaeEncoder(nn.Module):
         kernel_size: int = 15,
         latent_dim: int = 10,
         seq_len: int = 1000,
+        dropout: float = 0.5,
     ) -> None:
         super(VaeEncoder, self).__init__()
 
         # TCN1
         self.tcn1 = TCN(
-            in_dims=tcn1_in_dims, out_dims=tcn1_out_dims, kernel_size=kernel_size
+            in_dims=tcn1_in_dims,
+            out_dims=tcn1_out_dims,
+            kernel_size=kernel_size,
+            dropout=dropout,
         )
         self.max_pool1 = nn.MaxPool1d(kernel_size=2)
 
         # TCN2
         self.tcn2 = TCN(
-            in_dims=tcn2_in_dims, out_dims=tcn2_out_dims, kernel_size=kernel_size
+            in_dims=tcn2_in_dims,
+            out_dims=tcn2_out_dims,
+            kernel_size=kernel_size,
+            dropout=dropout,
         )
         self.max_pool2 = nn.MaxPool1d(kernel_size=2)
 
@@ -167,18 +192,25 @@ class Encoder(nn.Module):
         kernel_size: int = 15,
         latent_dim: int = 10,
         seq_len: int = 1000,
+        dropout: float = 0.5,
     ) -> None:
         super(Encoder, self).__init__()
 
         # TCN1
         self.tcn1 = TCN(
-            in_dims=tcn1_in_dims, out_dims=tcn1_out_dims, kernel_size=kernel_size
+            in_dims=tcn1_in_dims,
+            out_dims=tcn1_out_dims,
+            kernel_size=kernel_size,
+            dropout=dropout,
         )
         self.max_pool1 = nn.MaxPool1d(kernel_size=2)
 
         # TCN2
         self.tcn2 = TCN(
-            in_dims=tcn2_in_dims, out_dims=tcn2_out_dims, kernel_size=kernel_size
+            in_dims=tcn2_in_dims,
+            out_dims=tcn2_out_dims,
+            kernel_size=kernel_size,
+            dropout=dropout,
         )
         self.max_pool2 = nn.MaxPool1d(kernel_size=2)
 

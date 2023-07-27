@@ -7,11 +7,16 @@ from src.load_data_comp import laod_data
 from src.create_train_and_val_dataset_comp import create_train_and_val_dataset
 from src.create_test_dataset_comp import create_test_dataset
 from src.fit_scaler_comp import fit_scaler
+from src.visualize_results_comp import visualize_predictions
 import src.constants as const
 
 # load containerized python comps
 train_diag_tcn_vae = load_component_from_file(
     "pipeline/src/component_metadata/train_model.yaml"
+)
+
+compute_results = load_component_from_file(
+    "./pipeline/src/component_metadata/compute_results.yaml"
 )
 
 
@@ -23,6 +28,10 @@ def diag_tcn_tep_pipeline(
     batch_size: int = 128,
     learning_rate: float = 1e-3,
     kernel_size: int = 15,
+    num_test_samples: int = 100,
+    early_stopping_patience: int = 20,
+    latent_dim: int = 10,
+    dropout: float = .5,
 ):
     load_data_task = laod_data(raw_data_dir=const.RAW_DATA_DIR)
     load_data_task.set_env_variable(
@@ -54,13 +63,41 @@ def diag_tcn_tep_pipeline(
             input_cols=const.DATA_COLS,
             kernel_size=kernel_size,
             max_epochs=max_epochs,
-            num_signals=52,
             learning_rate=learning_rate,
+            early_stopping_patience=early_stopping_patience,
+            latent_dim=latent_dim,
+            dropout=dropout
         )
-        .set_cpu_limit("60")
+        .set_cpu_limit("30")
         .set_memory_limit("60G")
-        .set_cpu_request("30")
+        .set_cpu_request("12")
         .set_memory_request("30G")
+    )
+
+    compute_test_results_task = compute_results(
+        df=create_test_ds_task.outputs["df_test"],
+        model=train_diag_tcn_vae_task.outputs["trained_model"],
+        scaler=fit_scaler_task.outputs["scaler"],
+        number_of_samples=num_test_samples,
+    )
+
+    compute_val_results_task = compute_results(
+        df=create_train_val_ds_task.outputs["df_val"],
+        model=train_diag_tcn_vae_task.outputs["trained_model"],
+        scaler=fit_scaler_task.outputs["scaler"],
+        number_of_samples=number_validation_samples,
+    )
+
+    visualize_test_predictions_task = visualize_predictions(
+        df_results=compute_test_results_task.outputs["predictions"],
+        subsystems_map=const.SUBSYSTEM_MAP,
+        split="Test",
+    )
+
+    visualize_val_predictions_task = visualize_predictions(
+        df_results=compute_val_results_task.outputs["predictions"],
+        subsystems_map=const.SUBSYSTEM_MAP,
+        split="Validation",
     )
 
 
@@ -68,6 +105,16 @@ def diag_tcn_tep_pipeline(
 client = Client()
 client.create_run_from_pipeline_func(
     diag_tcn_tep_pipeline,
-    arguments={"max_epochs": 20, "batch_size": 512, "learning_rate": 1e-3},
+    arguments={
+        "max_epochs": 100,
+        "batch_size": 32,
+        "learning_rate": 1e-3,
+        "num_test_samples": 1000,
+        "early_stopping_patience": 20,
+        "learning_rate": 4e-4,
+        "latent_dim": 5,
+        "dropout":.5
+    },
     experiment_name="diag-tcn-tep",
+    enable_caching=True,
 )

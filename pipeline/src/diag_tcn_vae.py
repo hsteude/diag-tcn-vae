@@ -23,6 +23,7 @@ class DiagTcnVAE(pl.LightningModule):
         kernel_size: int = 15,
         component_output_dims: list = [3, 3],
         lr: float = 1e-3,
+        dropout: float = 0.5,
         *args,
         **kwargs,
     ) -> None:
@@ -32,6 +33,7 @@ class DiagTcnVAE(pl.LightningModule):
 
         self.save_hyperparameters()
         self.lr = lr
+        self.component_output_dims = component_output_dims
 
         self.encoder = VaeEncoder(
             tcn1_in_dims=enc_tcn1_in_dims,
@@ -41,6 +43,7 @@ class DiagTcnVAE(pl.LightningModule):
             kernel_size=kernel_size,
             latent_dim=latent_dim,
             seq_len=seq_len,
+            dropout=dropout,
         )
         self.decoder_ls = nn.ModuleList([])
         for out_dim in component_output_dims:
@@ -56,6 +59,7 @@ class DiagTcnVAE(pl.LightningModule):
                     latent_dim=latent_dim,
                     tcn1_seq_len=400,
                     tcn2_seq_len=seq_len,
+                    dropout=dropout
                 )
             )
 
@@ -67,7 +71,6 @@ class DiagTcnVAE(pl.LightningModule):
 
     def forward(self, x):
         return self.encode(x)
-
 
     def loss_function(self, x_ls, x_hat_ls, pzx):
         # initiating pz here since we ran into
@@ -91,16 +94,16 @@ class DiagTcnVAE(pl.LightningModule):
         e = torch.randn_like(std)
         s = e * std + mu
         return s
-    
-    def predict_step(self, batch, batch_idx: int, dataloader_idx: int = 0):
-        x, x_ls, _ = batch
+
+    def predict(self, x, x_ls):
+        # x, x_ls, _ = batch
         mu_z, log_var_z = self.encode(x)
-        pzx_sigma = torch.cat(
-            [torch.diag(torch.exp(log_var_z[i, :])) for i in range(log_var_z.shape[0])]
-        ).view(-1, self.latent_dim, self.latent_dim)
-        pzx = torch.distributions.MultivariateNormal(
-            loc=mu_z, covariance_matrix=pzx_sigma
-        )
+        # pzx_sigma = torch.cat(
+        #     [torch.diag(torch.exp(log_var_z[i, :])) for i in range(log_var_z.shape[0])]
+        # ).view(-1, self.latent_dim, self.latent_dim)
+        # pzx = torch.distributions.MultivariateNormal(
+        #     loc=mu_z, covariance_matrix=pzx_sigma
+        # )
         z = self.sample_gaussian(mu=mu_z, logvar=log_var_z)
         x_hat_ls = self.decode(z)
 
